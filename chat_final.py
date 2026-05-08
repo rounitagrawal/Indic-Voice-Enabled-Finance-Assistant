@@ -269,7 +269,7 @@ def respond():
 
 if __name__ == '__main__':
     try:
-        app.run(host='121.242.232.220', port=5003, debug=True)
+        app.run(host='0.0.0.0', port=0000, debug=False)
     except Exception as e:
         print(f"Error running Flask app: {e}")
         raise
