@@ -1,0 +1,42 @@
+# ── Indic Finance Assistant — Configuration Template ──────────────────────────
+# All secrets are loaded from environment variables (see .env.example).
+# This file controls non-secret configuration only.
+
+app:
+  name: "Indic Finance Assistant"
+  version: "1.0.0"
+  debug: false  # Override via APP_ENV=development
+
+rag:
+  top_k: 4
+  embedding_model: "paraphrase-MiniLM-L6-v2"
+  similarity_metric: "l2"  # Options: l2, cosine
+
+speech:
+  # AI4Bharat / ULCA service IDs
+  # Secrets (api_key, uid, authorization) are loaded from environment variables
+  asr:
+    neutral:   "ai4bharat/conformer-multilingual-indo_aryan-gpu--t4"
+    english:   "ai4bharat/whisper-medium-en--gpu--t4"
+    hindi:     "ai4bharat/conformer-hi-gpu--t4"
+    dravidian: "ai4bharat/conformer-multilingual-dravidian-gpu--t4"
+
+  mt:
+    service_id: "ai4bharat/indictrans-v2-all-gpu--t4"
+
+  tts:
+    english:   "ai4bharat/indic-tts-coqui-misc-gpu--t4"
+    neutral:   "ai4bharat/indic-tts-coqui-indo_aryan-gpu--t4"
+    dravidian: "ai4bharat/indic-tts-coqui-dravidian-gpu--t4"
+    voice_gender: "female"
+
+supported_languages:
+  - code: "en"
+    name: "English"
+    family: "english"
+  - code: "hi"
+    name: "Hindi"
+    family: "neutral"
+  - code: "ta"
+    name: "Tamil"
+    family: "dravidian"

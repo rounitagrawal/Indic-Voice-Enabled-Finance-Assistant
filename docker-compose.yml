@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    container_name: indic-finance-assistant
+    ports:
+      - "${APP_PORT:-5003}:5003"
+    env_file:
+      - .env              # Your local secrets (never committed)
+    environment:
+      - APP_ENV=development
+    volumes:
+      # Mount data directory so the FAISS index persists between restarts
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5003/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
