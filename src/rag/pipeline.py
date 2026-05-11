@@ -63,7 +63,9 @@ class RAGPipeline:
         query_vector = self._embedder.encode_single(user_input)
         return self._retriever.search(query_vector, top_k=self._config.top_k)
 
-    def get_answer_by_index(self, result_index: int, results: list[RetrievalResult]) -> RetrievalResult:
+    def get_answer_by_index(
+        self, result_index: int, results: list[RetrievalResult]
+    ) -> RetrievalResult:
         """
         Fetch a specific result from a previous query by its 1-based position.
 

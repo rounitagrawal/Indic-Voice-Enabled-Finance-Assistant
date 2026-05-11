@@ -1,236 +1,258 @@
-import requests
+"""
+src/speech/ASR_TTS_MT.py
+─────────────────────────
+AI4Bharat / ULCA speech pipeline functions: ASR, MT, TTS.
+
+All API credentials are loaded from environment variables.
+They must NEVER be hardcoded in source code.
+Add them to your .env file (see .env.example).
+"""
 import json
+import os
 
-def ASR_config_call(language):
+import requests
 
-    url = "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline"
 
+# ── Credentials (loaded from environment, never hardcoded) ────────────────────
+_ULCA_API_KEY = os.environ.get("ULCA_API_KEY", "")
+_ULCA_USER_ID = os.environ.get("ULCA_USER_ID", "")
+_ULCA_AUTHORIZATION = os.environ.get("ULCA_AUTHORIZATION", "")
+
+_CONFIG_URL = (
+    "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline"
+)
+_INFERENCE_URL = (
+    "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+)
+_PIPELINE_ID = "64392f96daac500b55c543cd"
+
+
+def _config_headers() -> dict:
+    """Headers used for pipeline config (model-discovery) calls."""
+    return {
+        "ulcaApikey": _ULCA_API_KEY,
+        "userID": _ULCA_USER_ID,
+        "Content-Type": "application/json",
+    }
+
+
+def _inference_headers() -> dict:
+    """Headers used for inference (ASR / MT / TTS) calls."""
+    return {
+        "Authorization": _ULCA_AUTHORIZATION,
+        "Content-Type": "application/json",
+    }
+
+
+# ── ASR ───────────────────────────────────────────────────────────────────────
+
+def ASR_config_call(language: str) -> tuple[str, str]:
+    """Fetch the ASR service ID and inference key for a given language."""
     payload = json.dumps({
-    "pipelineTasks": [
-        {
-        "taskType": "asr",
-        "config": {
-            "language": {
-            "sourceLanguage": language
+        "pipelineTasks": [
+            {
+                "taskType": "asr",
+                "config": {
+                    "language": {
+                        "sourceLanguage": language,
+                    }
+                },
             }
-        }
-        }
-    ],
-    "pipelineRequestConfig": {
-        "pipelineId": "64392f96daac500b55c543cd"
-    }
+        ],
+        "pipelineRequestConfig": {
+            "pipelineId": _PIPELINE_ID,
+        },
     })
-    headers = {
-    'ulcaApikey': '023043f5a8-232b-4d97-8211-3f02e847b03c',
-    'userID': 'fab68bae1dc648158911546d695959c4',
-    'Content-Type': 'application/json'
-    }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
-    text = response.text
-    json_object = json.loads(text)
-    serviceID = json_object['pipelineResponseConfig'][0]['config'][0]['serviceId']
-    inference_api_key = json_object['pipelineInferenceAPIEndPoint']['inferenceApiKey']['value']
+    response = requests.post(_CONFIG_URL, headers=_config_headers(), data=payload)
+    response.raise_for_status()
+    json_object = response.json()
 
-    return serviceID,inference_api_key
+    service_id = (
+        json_object["pipelineResponseConfig"][0]["config"][0]["serviceId"]
+    )
+    inference_api_key = (
+        json_object["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
+    )
+    return service_id, inference_api_key
 
 
-def ASR_call(language,audio_64):
-
-    url = "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-    serviceID , infer_key = ASR_config_call(language)
+def ASR_call(language: str, audio_64: str) -> str:
+    """Transcribe base64-encoded audio to text using AI4Bharat ASR."""
+    service_id, _ = ASR_config_call(language)
 
     payload = json.dumps({
-    "pipelineTasks": [
-        {
-        "taskType": "asr",
-        "config": {
-            "language": {
-            "sourceLanguage": language
-            },
-            "serviceId": serviceID,
-            "audioFormat": "wav",
-            "samplingRate": 16000
-        }
-        }
-    ],
-    "inputData": {
-        "audio": [
-        {
-            "audioContent": audio_64
-        }
-        ]
-    }
+        "pipelineTasks": [
+            {
+                "taskType": "asr",
+                "config": {
+                    "language": {
+                        "sourceLanguage": language,
+                    },
+                    "serviceId": service_id,
+                    "audioFormat": "wav",
+                    "samplingRate": 16000,
+                },
+            }
+        ],
+        "inputData": {
+            "audio": [
+                {
+                    "audioContent": audio_64,
+                }
+            ]
+        },
     })
-    headers = {
-    'Authorization': 'vAhBOFg8AT_gDkcevrkxRtwTygQIKIIYaYBhhuBcg9gmJ530FXYI35dNUg3r7miD', #infer_key
-    'Content-Type': 'application/json'
-    }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
-    res = response.text
-    # print("response",res)
-    json_obj = json.loads(res)
-    # print("json obj",json_obj)
-    out_text = json_obj['pipelineResponse'][0]['output'][0]['source']
+    response = requests.post(
+        _INFERENCE_URL, headers=_inference_headers(), data=payload
+    )
+    response.raise_for_status()
+    json_obj = response.json()
+    out_text = json_obj["pipelineResponse"][0]["output"][0]["source"]
     return out_text
 
 
-def MT_config_call(source_language,target_language):
+# ── MT ────────────────────────────────────────────────────────────────────────
 
-    url = "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline"
-
+def MT_config_call(source_language: str, target_language: str) -> str:
+    """Fetch the MT inference key for a given language pair."""
     payload = json.dumps({
-    "pipelineTasks": [
-        {
-        "taskType": "translation",
-        "config": {
-            "language": {
-            "sourceLanguage": source_language,
-            "targetLanguage": target_language
+        "pipelineTasks": [
+            {
+                "taskType": "translation",
+                "config": {
+                    "language": {
+                        "sourceLanguage": source_language,
+                        "targetLanguage": target_language,
+                    }
+                },
             }
-        }
-        }
-    ],
-    "pipelineRequestConfig": {
-        "pipelineId": "64392f96daac500b55c543cd"
-    }
+        ],
+        "pipelineRequestConfig": {
+            "pipelineId": _PIPELINE_ID,
+        },
     })
-    headers = {
-    'ulcaApikey': '023043f5a8-232b-4d97-8211-3f02e847b03c',
-    'userID': 'fab68bae1dc648158911546d695959c4',
-    'Content-Type': 'application/json'
-    }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
-    text = response.text
-    json_object = json.loads(text)
-    # serviceID = json_object['pipelineResponseConfig'][0]['config'][0]['serviceId']
-    inference_api_key = json_object['pipelineInferenceAPIEndPoint']['inferenceApiKey']['value']
+    response = requests.post(_CONFIG_URL, headers=_config_headers(), data=payload)
+    response.raise_for_status()
+    json_object = response.json()
 
-
+    inference_api_key = (
+        json_object["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
+    )
     return inference_api_key
 
 
-def MT_call(source_lan,target_lan,input_text):
-
-    url = "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-
-    serviceID = "ai4bharat/indictrans-v2-all-gpu--t4"
-    infer_key = MT_config_call(source_lan,target_lan)
+def MT_call(source_lan: str, target_lan: str, input_text: str) -> str:
+    """Translate text from source language to target language."""
+    service_id = "ai4bharat/indictrans-v2-all-gpu--t4"
+    MT_config_call(source_lan, target_lan)  # Validates the language pair
 
     payload = json.dumps({
-    "pipelineTasks": [
-        {
-        "taskType": "translation",
-        "config": {
-            "language": {
-            "sourceLanguage": source_lan,
-            "targetLanguage": target_lan
-            },
-            "serviceId": serviceID
-        }
-        }
-    ],
-    "inputData": {
-        "input": [
-        {
-            "source": input_text
-        }
+        "pipelineTasks": [
+            {
+                "taskType": "translation",
+                "config": {
+                    "language": {
+                        "sourceLanguage": source_lan,
+                        "targetLanguage": target_lan,
+                    },
+                    "serviceId": service_id,
+                },
+            }
         ],
-        "audio": [
-        {
-            "audioContent": None
-        }
-        ]
-    }
+        "inputData": {
+            "input": [
+                {
+                    "source": input_text,
+                }
+            ],
+            "audio": [
+                {
+                    "audioContent": None,
+                }
+            ],
+        },
     })
-    headers = {
-    'Authorization': 'vAhBOFg8AT_gDkcevrkxRtwTygQIKIIYaYBhhuBcg9gmJ530FXYI35dNUg3r7miD', #infer_key
-    'Content-Type': 'application/json'
-    }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
-    res = response.text
-    json_obj = json.loads(res)
-    out_text = json_obj['pipelineResponse'][0]['output'][0]['target']
-
+    response = requests.post(
+        _INFERENCE_URL, headers=_inference_headers(), data=payload
+    )
+    response.raise_for_status()
+    json_obj = response.json()
+    out_text = json_obj["pipelineResponse"][0]["output"][0]["target"]
     return out_text
 
 
-def TTS_config_call(target_lan):
+# ── TTS ───────────────────────────────────────────────────────────────────────
 
-    url = "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline"
-
+def TTS_config_call(target_lan: str) -> tuple[str, str]:
+    """Fetch the TTS service ID and inference key for a given language."""
     payload = json.dumps({
-    "pipelineTasks": [
-        {
-        "taskType": "tts",
-        "config": {
-            "language": {
-            "sourceLanguage": target_lan
+        "pipelineTasks": [
+            {
+                "taskType": "tts",
+                "config": {
+                    "language": {
+                        "sourceLanguage": target_lan,
+                    }
+                },
             }
-        }
-        }
-    ],
-    "pipelineRequestConfig": {
-        "pipelineId": "64392f96daac500b55c543cd"
-    }
-    })
-    headers = {
-    'userID': 'fab68bae1dc648158911546d695959c4',
-    'ulcaApikey': '023043f5a8-232b-4d97-8211-3f02e847b03c',
-    'Content-Type': 'application/json'
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-    text = response.text
-    json_object = json.loads(text)
-    serviceID = json_object['pipelineResponseConfig'][0]['config'][0]['serviceId']
-    infer_key = json_object['pipelineInferenceAPIEndPoint']['inferenceApiKey']['value']
-
-    return serviceID, infer_key
-
-def TTS_call(language,input_text):
-
-    url = "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
-
-    serviceID,infer_key = TTS_config_call(language)
-    payload = json.dumps({
-    "pipelineTasks": [
-        {
-        "taskType": "tts",
-        "config": {
-            "language": {
-            "sourceLanguage": language
-            },
-            "serviceId": serviceID,
-            "gender": "female"
-        }
-        }
-    ],
-    "inputData": {
-        "input": [
-        {
-            "source": input_text
-        }
         ],
-        "audio": [
-        {
-            "audioContent": None
-        }
-        ]
-    }
+        "pipelineRequestConfig": {
+            "pipelineId": _PIPELINE_ID,
+        },
     })
-    headers = {
-    'Authorization': 'vAhBOFg8AT_gDkcevrkxRtwTygQIKIIYaYBhhuBcg9gmJ530FXYI35dNUg3r7miD',#infer_key
-    'Content-Type': 'application/json'
-    }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
-    # print("response",response.text)
+    response = requests.post(_CONFIG_URL, headers=_config_headers(), data=payload)
+    response.raise_for_status()
+    json_object = response.json()
+
+    service_id = (
+        json_object["pipelineResponseConfig"][0]["config"][0]["serviceId"]
+    )
+    infer_key = (
+        json_object["pipelineInferenceAPIEndPoint"]["inferenceApiKey"]["value"]
+    )
+    return service_id, infer_key
+
+
+def TTS_call(language: str, input_text: str) -> str:
+    """Convert text to speech, returning base64-encoded audio."""
+    service_id, _ = TTS_config_call(language)
+
+    payload = json.dumps({
+        "pipelineTasks": [
+            {
+                "taskType": "tts",
+                "config": {
+                    "language": {
+                        "sourceLanguage": language,
+                    },
+                    "serviceId": service_id,
+                    "gender": "female",
+                },
+            }
+        ],
+        "inputData": {
+            "input": [
+                {
+                    "source": input_text,
+                }
+            ],
+            "audio": [
+                {
+                    "audioContent": None,
+                }
+            ],
+        },
+    })
+
+    response = requests.post(
+        _INFERENCE_URL, headers=_inference_headers(), data=payload
+    )
+    response.raise_for_status()
     json_obj = response.json()
-    # print(json_obj)
-    out_audio = json_obj['pipelineResponse'][0]['audio'][0]['audioContent']
+    out_audio = json_obj["pipelineResponse"][0]["audio"][0]["audioContent"]
     return out_audio
-

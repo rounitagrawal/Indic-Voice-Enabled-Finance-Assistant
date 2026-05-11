@@ -77,7 +77,9 @@ def mock_speech():
 @pytest.fixture
 def mock_llm():
     llm = MagicMock()
-    llm.humanise_answer.return_value = "NPV stands for Net Present Value, measuring investment worth."
+    llm.humanise_answer.return_value = (
+        "NPV stands for Net Present Value, measuring investment worth."
+    )
     return llm
 
 

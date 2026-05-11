@@ -8,8 +8,6 @@ They run in CI without any credentials.
 """
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -74,7 +72,9 @@ def rag_config(tmp_path, tmp_index_path) -> RAGConfig:
 
 class TestFAISSRetriever:
 
-    def test_build_and_search(self, sample_questions, sample_answers, sample_vectors, tmp_index_path):
+    def test_build_and_search(
+        self, sample_questions, sample_answers, sample_vectors, tmp_index_path
+    ):
         retriever = FAISSRetriever(tmp_index_path)
         retriever.build(sample_questions, sample_answers, sample_vectors)
 
@@ -139,7 +139,9 @@ class TestRAGPipeline:
         with pytest.raises(ValueError, match="at least 2 columns"):
             RAGPipeline._load_data(rag_config.data_path)
 
-    def test_get_answer_by_index_valid(self, rag_config, sample_questions, sample_answers, sample_vectors):
+    def test_get_answer_by_index_valid(
+        self, rag_config, sample_questions, sample_answers, sample_vectors
+    ):
         results = [
             RetrievalResult(q, a, 0.1, i)
             for i, (q, a) in enumerate(zip(sample_questions[:3], sample_answers[:3]))
