@@ -132,3 +132,4 @@ class RAGPipeline:
 
         logger.info("Loaded %d Q&A pairs from %s.", len(questions), file_path)
         return questions, answers
+    
