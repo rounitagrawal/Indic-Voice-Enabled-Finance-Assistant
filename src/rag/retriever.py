@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import logging
 import pickle
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 import faiss
 import numpy as np

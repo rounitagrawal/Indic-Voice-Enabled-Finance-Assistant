@@ -15,10 +15,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.rag.embedder import Embedder
-from src.rag.retriever import FAISSRetriever, RetrievalResult
-from src.rag.pipeline import RAGPipeline
 from src.config import RAGConfig
+from src.rag.embedder import Embedder
+from src.rag.pipeline import RAGPipeline
+from src.rag.retriever import FAISSRetriever, RetrievalResult
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
