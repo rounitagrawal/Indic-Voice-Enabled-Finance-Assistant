@@ -10,6 +10,7 @@ Replaces the original Response.py. Key changes:
 - Graceful fallback: returns the raw answer if the LLM call fails,
   so the system degrades cleanly rather than throwing a 500.
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,7 +37,9 @@ Do not use bullet points or lists.\
 class GeminiClient:
     """Wrapper around the Gemini generative model."""
 
-    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash-latest") -> None:
+    def __init__(
+        self, api_key: str, model_name: str = "gemini-1.5-flash-latest"
+    ) -> None:
         genai.configure(api_key=api_key)
         self._model = genai.GenerativeModel(model_name=model_name)
         logger.info("Gemini client initialised with model: %s", model_name)
@@ -59,7 +62,9 @@ class GeminiClient:
             response = self._model.generate_content(prompt)
             if response and response.text:
                 return response.text.strip()
-            logger.warning("Gemini returned an empty response. Falling back to raw answer.")
+            logger.warning(
+                "Gemini returned an empty response. Falling back to raw answer."
+            )
             return raw_answer
         except Exception as exc:
             logger.error("Gemini API call failed: %s. Falling back to raw answer.", exc)

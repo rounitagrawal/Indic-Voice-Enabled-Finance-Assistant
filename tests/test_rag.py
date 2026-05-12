@@ -6,6 +6,7 @@ Unit tests for the RAG pipeline.
 These tests use only in-memory data — no external APIs, no files required.
 They run in CI without any credentials.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -19,8 +20,8 @@ from src.rag.retriever import FAISSRetriever, RetrievalResult
 from src.rag.pipeline import RAGPipeline
 from src.config import RAGConfig
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def sample_questions() -> list[str]:
@@ -70,6 +71,7 @@ def rag_config(tmp_path, tmp_index_path) -> RAGConfig:
 
 # ── Retriever Tests ───────────────────────────────────────────────────────────
 
+
 class TestFAISSRetriever:
 
     def test_build_and_search(
@@ -86,7 +88,9 @@ class TestFAISSRetriever:
         assert results[0].index == 0  # Exact match is first
         assert results[0].score < results[1].score  # Lower L2 = more similar
 
-    def test_save_and_load(self, sample_questions, sample_answers, sample_vectors, tmp_index_path):
+    def test_save_and_load(
+        self, sample_questions, sample_answers, sample_vectors, tmp_index_path
+    ):
         retriever = FAISSRetriever(tmp_index_path)
         retriever.build(sample_questions, sample_answers, sample_vectors)
         retriever.save()
@@ -119,10 +123,13 @@ class TestFAISSRetriever:
 
 # ── Pipeline Tests ────────────────────────────────────────────────────────────
 
+
 class TestRAGPipeline:
 
     def _make_csv(self, path: str, questions: list[str], answers: list[str]) -> None:
-        pd.DataFrame({"question": questions, "answer": answers}).to_csv(path, index=False)
+        pd.DataFrame({"question": questions, "answer": answers}).to_csv(
+            path, index=False
+        )
 
     def test_load_data_success(self, rag_config, sample_questions, sample_answers):
         self._make_csv(rag_config.data_path, sample_questions, sample_answers)
@@ -158,7 +165,12 @@ class TestRAGPipeline:
 
     @patch("src.rag.pipeline.Embedder")
     def test_initialize_builds_index_when_no_cache(
-        self, mock_embedder_cls, rag_config, sample_questions, sample_answers, sample_vectors
+        self,
+        mock_embedder_cls,
+        rag_config,
+        sample_questions,
+        sample_answers,
+        sample_vectors,
     ):
         self._make_csv(rag_config.data_path, sample_questions, sample_answers)
 
@@ -173,6 +185,7 @@ class TestRAGPipeline:
 
 
 # ── Embedder Tests ────────────────────────────────────────────────────────────
+
 
 class TestEmbedder:
 

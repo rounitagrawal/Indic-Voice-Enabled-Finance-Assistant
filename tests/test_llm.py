@@ -5,6 +5,7 @@ Unit tests for the Gemini LLM client.
 
 All tests mock the external Gemini API — no real network calls or API keys needed.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

@@ -6,6 +6,7 @@ Thin wrapper around SentenceTransformer.
 Keeping the embedding model isolated here means you can swap it out
 (e.g., upgrade to a multilingual model) without touching the pipeline.
 """
+
 from __future__ import annotations
 
 import logging

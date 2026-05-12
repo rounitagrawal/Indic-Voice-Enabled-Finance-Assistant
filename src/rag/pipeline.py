@@ -7,6 +7,7 @@ This is the single entry point for all RAG operations. The Flask routes
 should call this and nothing else — they don't need to know about FAISS
 or embeddings directly.
 """
+
 from __future__ import annotations
 
 import logging

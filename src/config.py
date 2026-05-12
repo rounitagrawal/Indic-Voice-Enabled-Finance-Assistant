@@ -10,6 +10,7 @@ Loads from:
 Fails fast with a clear error if required secrets are missing —
 better to crash at startup than silently fail mid-request.
 """
+
 from __future__ import annotations
 
 import os

@@ -8,6 +8,7 @@ Key improvements over the original:
 - Separates indexing logic from search logic cleanly.
 - Validates data integrity on load.
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RetrievalResult:
     """A single retrieved document with its similarity score."""
+
     question: str
     answer: str
     score: float
@@ -127,7 +129,9 @@ class FAISSRetriever:
             List of RetrievalResult objects, ordered by similarity (closest first).
         """
         if not self.is_built:
-            raise RuntimeError("Index has not been built or loaded. Call build() or load() first.")
+            raise RuntimeError(
+                "Index has not been built or loaded. Call build() or load() first."
+            )
 
         query = np.array([query_vector], dtype=np.float32)
         distances, indices = self._index.search(query, top_k)

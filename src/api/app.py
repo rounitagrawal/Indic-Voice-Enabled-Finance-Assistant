@@ -6,6 +6,7 @@ Flask application factory.
 Using a factory function (rather than a module-level `app` object) makes
 the app testable — tests can create isolated instances without side effects.
 """
+
 from __future__ import annotations
 
 import logging
@@ -55,7 +56,9 @@ def create_app(config: AppConfig | None = None) -> Flask:
 
     logger.info(
         "Application '%s' v%s ready. Debug=%s",
-        config.name, config.version, config.debug,
+        config.name,
+        config.version,
+        config.debug,
     )
     return app
 

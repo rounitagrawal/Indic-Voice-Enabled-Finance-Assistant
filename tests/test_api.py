@@ -6,6 +6,7 @@ Integration tests for the Flask API routes.
 Tests the full request/response cycle without any real external services.
 All speech and LLM calls are mocked.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -16,8 +17,8 @@ from src.api.app import create_app
 from src.config import AppConfig, RAGConfig, SpeechConfig
 from src.rag.retriever import RetrievalResult
 
-
 # ── Test Config ───────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def test_config(tmp_path) -> AppConfig:
@@ -85,9 +86,9 @@ def mock_llm():
 
 @pytest.fixture
 def client(test_config, mock_rag, mock_speech, mock_llm):
-    with patch("src.api.app.RAGPipeline") as MockRAG, \
-         patch("src.api.app.GeminiClient") as MockLLM, \
-         patch("src.api.app.SpeechService") as MockSpeech:
+    with patch("src.api.app.RAGPipeline") as MockRAG, patch(
+        "src.api.app.GeminiClient"
+    ) as MockLLM, patch("src.api.app.SpeechService") as MockSpeech:
 
         MockRAG.return_value = mock_rag
         MockLLM.return_value = mock_llm
@@ -101,6 +102,7 @@ def client(test_config, mock_rag, mock_speech, mock_llm):
 
 # ── Health Check ──────────────────────────────────────────────────────────────
 
+
 class TestHealthCheck:
 
     def test_health_returns_ok(self, client):
@@ -111,6 +113,7 @@ class TestHealthCheck:
 
 
 # ── /chat Endpoint ────────────────────────────────────────────────────────────
+
 
 class TestChatEndpoint:
 
@@ -127,11 +130,14 @@ class TestChatEndpoint:
         assert "audio" in response.get_json()["error"]
 
     def test_valid_request_returns_options(self, client):
-        response = client.post("/api/v1/chat", json={
-            "lang": "en",
-            "audio": "base64audiofake==",
-            "session_id": "test-session-1",
-        })
+        response = client.post(
+            "/api/v1/chat",
+            json={
+                "lang": "en",
+                "audio": "base64audiofake==",
+                "session_id": "test-session-1",
+            },
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert data["success"] is True
@@ -142,25 +148,32 @@ class TestChatEndpoint:
 
     def test_response_contains_asr_output(self, client, mock_speech):
         mock_speech.transcribe.return_value = "What is compound interest"
-        response = client.post("/api/v1/chat", json={
-            "lang": "hi",
-            "audio": "base64audiofake==",
-        })
+        response = client.post(
+            "/api/v1/chat",
+            json={
+                "lang": "hi",
+                "audio": "base64audiofake==",
+            },
+        )
         assert response.status_code == 200
         assert response.get_json()["asr_out"] == "What is compound interest"
 
 
 # ── /respond Endpoint ─────────────────────────────────────────────────────────
 
+
 class TestRespondEndpoint:
 
     def _seed_session(self, client, session_id: str = "test-session"):
         """Call /chat first to populate the session store."""
-        client.post("/api/v1/chat", json={
-            "lang": "en",
-            "audio": "base64audiofake==",
-            "session_id": session_id,
-        })
+        client.post(
+            "/api/v1/chat",
+            json={
+                "lang": "en",
+                "audio": "base64audiofake==",
+                "session_id": session_id,
+            },
+        )
 
     def test_missing_lang_returns_400(self, client):
         response = client.post("/api/v1/respond", json={"audio": "abc=="})
@@ -168,11 +181,14 @@ class TestRespondEndpoint:
 
     def test_no_active_session_returns_400(self, client, mock_speech):
         mock_speech.transcribe.return_value = "1"
-        response = client.post("/api/v1/respond", json={
-            "lang": "en",
-            "audio": "base64audiofake==",
-            "session_id": "nonexistent-session",
-        })
+        response = client.post(
+            "/api/v1/respond",
+            json={
+                "lang": "en",
+                "audio": "base64audiofake==",
+                "session_id": "nonexistent-session",
+            },
+        )
         assert response.status_code == 400
         assert "session" in response.get_json()["error"].lower()
 
@@ -180,11 +196,14 @@ class TestRespondEndpoint:
         self._seed_session(client, "respond-test")
         mock_speech.transcribe.return_value = "1"
 
-        response = client.post("/api/v1/respond", json={
-            "lang": "en",
-            "audio": "base64audiofake==",
-            "session_id": "respond-test",
-        })
+        response = client.post(
+            "/api/v1/respond",
+            json={
+                "lang": "en",
+                "audio": "base64audiofake==",
+                "session_id": "respond-test",
+            },
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert data["success"] is True
@@ -196,11 +215,14 @@ class TestRespondEndpoint:
         self._seed_session(client, "none-session")
         mock_speech.transcribe.return_value = "4"  # = len(results) + 1
 
-        response = client.post("/api/v1/respond", json={
-            "lang": "en",
-            "audio": "base64audiofake==",
-            "session_id": "none-session",
-        })
+        response = client.post(
+            "/api/v1/respond",
+            json={
+                "lang": "en",
+                "audio": "base64audiofake==",
+                "session_id": "none-session",
+            },
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert data["success"] is True
@@ -210,9 +232,12 @@ class TestRespondEndpoint:
         self._seed_session(client, "word-session")
         mock_speech.transcribe.return_value = "one"
 
-        response = client.post("/api/v1/respond", json={
-            "lang": "en",
-            "audio": "base64audiofake==",
-            "session_id": "word-session",
-        })
+        response = client.post(
+            "/api/v1/respond",
+            json={
+                "lang": "en",
+                "audio": "base64audiofake==",
+                "session_id": "word-session",
+            },
+        )
         assert response.status_code == 200

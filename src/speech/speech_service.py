@@ -12,6 +12,7 @@ Why this wrapper exists:
 - Makes the speech layer mockable in tests.
 - Centralises error handling for all three modalities.
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 # Importing at module level would crash tests and CI where these aren't available.
 try:
     from ASR_TTS_MT import ASR_call, MT_call, TTS_call  # type: ignore[import]
+
     _SPEECH_AVAILABLE = True
 except ImportError:
     logger.warning(

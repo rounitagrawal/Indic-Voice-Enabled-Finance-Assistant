@@ -11,6 +11,7 @@ Design principles:
 - The logic bug in the original /respond endpoint is fixed:
   `restart` is now set correctly based on actual choice value.
 """
+
 from __future__ import annotations
 
 import logging
@@ -98,9 +99,7 @@ def chat():
         _session_store[session_id] = results
 
         # 4. Build numbered options string
-        options_lines = [
-            f"{i + 1}. {r.question}" for i, r in enumerate(results)
-        ]
+        options_lines = [f"{i + 1}. {r.question}" for i, r in enumerate(results)]
         options_lines.append(f"{len(results) + 1}. None of the above")
         options_str = "\n".join(options_lines)
 
@@ -108,13 +107,15 @@ def chat():
         options_in_lang = _speech.from_english(lang, options_str)
         options_tts = _speech.synthesise(lang, options_in_lang)
 
-        return _success_response({
-            "asr_out": user_text,
-            "options": options_in_lang,
-            "options_tts": options_tts,
-            "session_id": session_id,
-            "num_options": len(results),
-        })
+        return _success_response(
+            {
+                "asr_out": user_text,
+                "options": options_in_lang,
+                "options_tts": options_tts,
+                "session_id": session_id,
+                "num_options": len(results),
+            }
+        )
 
     except ValueError as exc:
         logger.warning("Validation error in /chat: %s", exc)
@@ -152,13 +153,19 @@ def respond():
 
     results = _session_store.get(session_id)
     if results is None:
-        return _error_response(
-            "No active session found. Please call /chat first.", 400
-        )
+        return _error_response("No active session found. Please call /chat first.", 400)
 
     _word_to_digit = {
-        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-        "ek": 1, "do": 2, "teen": 3, "char": 4, "paanch": 5,
+        "one": 1,
+        "two": 2,
+        "three": 3,
+        "four": 4,
+        "five": 5,
+        "ek": 1,
+        "do": 2,
+        "teen": 3,
+        "char": 4,
+        "paanch": 5,
     }
 
     try:
@@ -184,12 +191,14 @@ def respond():
             message = "Please rephrase your question and try again."
             message_in_lang = _speech.from_english(lang, message)
             tts_out = _speech.synthesise(lang, message_in_lang)
-            return _success_response({
-                "choice_text": choice_text,
-                "answer": message_in_lang,
-                "answer_tts": tts_out,
-                "done": True,
-            })
+            return _success_response(
+                {
+                    "choice_text": choice_text,
+                    "answer": message_in_lang,
+                    "answer_tts": tts_out,
+                    "done": True,
+                }
+            )
 
         # 4. Retrieve the selected result
         selected = _rag.get_answer_by_index(choice, results)
@@ -204,23 +213,30 @@ def respond():
         # 7. Clean up session
         del _session_store[session_id]
 
-        return _success_response({
-            "choice_text": choice_text,
-            "answer": final_answer_in_lang,
-            "answer_tts": tts_out,
-            "done": True,
-        })
+        return _success_response(
+            {
+                "choice_text": choice_text,
+                "answer": final_answer_in_lang,
+                "answer_tts": tts_out,
+                "done": True,
+            }
+        )
 
     except (ValueError, IndexError) as exc:
         logger.warning("User input error in /respond: %s", exc)
         error_msg = _speech.from_english(lang, str(exc))
         tts_out = _speech.synthesise(lang, error_msg)
-        return jsonify({
-            "success": False,
-            "error": error_msg,
-            "answer_tts": tts_out,
-            "done": False,
-        }), 400
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": error_msg,
+                    "answer_tts": tts_out,
+                    "done": False,
+                }
+            ),
+            400,
+        )
 
     except Exception as exc:
         logger.exception("Unexpected error in /respond")
